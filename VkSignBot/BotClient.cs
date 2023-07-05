@@ -1,4 +1,3 @@
-
 namespace VkSignBot
 {
     public class BotClient : IBotClient
@@ -44,31 +43,49 @@ namespace VkSignBot
         public async Task StartPolling()
         {
             Console.WriteLine("Polling...");
-            while (true)
+            try
             {
-                var longPollResponse = await _botApi!.Groups.GetLongPollServerAsync(_groupId);
-                var updates = await _botApi!.Groups.GetBotsLongPollHistoryAsync(new BotsLongPollHistoryParams
+                while (true)
                 {
-                    Ts = longPollResponse.Ts,
-                    Key = longPollResponse.Key,
-                    Server = longPollResponse.Server,
-                    Wait = 25
-                });
+                    var longPollResponse = await _botApi!.Groups.GetLongPollServerAsync(_groupId);
+                    var updates = await _botApi!.Groups.GetBotsLongPollHistoryAsync(new BotsLongPollHistoryParams
+                    {
+                        Ts = longPollResponse.Ts,
+                        Key = longPollResponse.Key,
+                        Server = longPollResponse.Server,
+                        Wait = 25
+                    });
 
-                if (updates.Updates is null) continue;
+                    if (updates.Updates is null) continue;
 
-                Task.Run(async () =>
-                {
-                    foreach (var update in updates.Updates)
-                        await HandleUpdateAsync(update);
-                });
+                    Task.Run(async () =>
+                    {
+                        foreach (var update in updates.Updates)
+                            await HandleUpdateAsync(update);
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                throw;
+            }
+        }
+
+        public async Task HandleUpdateAsync(GroupUpdate update)
+        {
+            switch (update.Instance)
+            {
+                case MessageNew:
+                    await HandleMessageAsync(update);
+                    break;
             }
         }
 
         public async Task HandleMessageAsync(GroupUpdate update)
         {
             const char commandSymbol = '/';
-            var message = (update.Instance as MessageNew).Message;
+            Message message = (update.Instance as MessageNew)!.Message;
             var text = message.Text.ToLower();
 
             if (!text.StartsWith(commandSymbol))
@@ -82,20 +99,12 @@ namespace VkSignBot
                     int startIndex = text.IndexOf(command);
                     if (message.Attachments.Count > 0)
                     {
-                        var postId = (message.Attachments.First(attach => attach.Type == typeof(Wall)).Instance as Wall);
+                        var post = (message.Attachments.First(attach => attach.Type == typeof(Wall)).Instance as Wall);
+                        await cmdService.MakeSign(message, post);
+                        break;
                     }
                     var url = text.Substring(startIndex + command.Length + 1);
                     await cmdService.MakeSign(message, url);
-                    break;
-            }
-        }
-
-        public async Task HandleUpdateAsync(GroupUpdate update)
-        {
-            switch (update.Instance)
-            {
-                case MessageNew:
-                    await HandleMessageAsync(update);
                     break;
             }
         }
