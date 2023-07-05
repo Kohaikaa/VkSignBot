@@ -8,7 +8,7 @@ dotnet add package VkNet --version 1.74.0
 ```
 
 ## Configuration
-Inside the appsettings.json fill up this settings.
+Inside the appsettings.json fill up thess options.
 ```json
 {
     "Vk": {
