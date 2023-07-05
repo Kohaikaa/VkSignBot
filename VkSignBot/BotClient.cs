@@ -2,6 +2,7 @@ namespace VkSignBot
 {
     public class BotClient : IBotClient
     {
+        private static Random _random = new Random();
         private readonly string? _botToken;
         private readonly string? _appToken;
         private readonly uint _appId;
@@ -56,7 +57,7 @@ namespace VkSignBot
                         Wait = 25
                     });
 
-                    if (updates.Updates is null) continue;
+                    if (updates.Updates is null || updates.Updates.Count == 0) continue;
 
                     Task.Run(async () =>
                     {
@@ -86,25 +87,37 @@ namespace VkSignBot
         {
             const char commandSymbol = '/';
             Message message = (update.Instance as MessageNew)!.Message;
-            var text = message.Text.ToLower();
+            var text = message.Text.Trim().ToLower();
 
             if (!text.StartsWith(commandSymbol))
                 return;
 
             var command = text.Split(new char[] { commandSymbol, ' ' })[1];
+            var parameters =
+                text.Split(' ').Length > 1 && text.IndexOf(command) == 1 ?
+                text.Split(' ').AsSpan<string>().Slice(1).ToArray() :
+                null;
             var cmdService = new CommandService(this);
             switch (command)
             {
                 case "роспись":
-                    int startIndex = text.IndexOf(command);
                     if (message.Attachments.Count > 0)
                     {
                         var post = (message.Attachments.First(attach => attach.Type == typeof(Wall)).Instance as Wall);
                         await cmdService.MakeSign(message, post);
                         break;
                     }
-                    var url = text.Substring(startIndex + command.Length + 1);
-                    await cmdService.MakeSign(message, url);
+                    else if (parameters is null)
+                    {
+                        await _botApi.Messages.SendAsync(new MessagesSendParams
+                        {
+                            UserId = message.FromId,
+                            RandomId = _random.NextInt64(),
+                            Message = $"Ни ссылки на пост, ни репост поста в лс нету, то и расписаться нигде не могу."
+                        });
+                        break;
+                    }
+                    await cmdService.MakeSign(message, parameters[0]);
                     break;
             }
         }

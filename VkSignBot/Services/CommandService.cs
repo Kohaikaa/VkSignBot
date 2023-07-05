@@ -14,55 +14,74 @@ namespace VkSignBot.Services
 
         public async Task MakeSign(Message message, string postUrl)
         {
-            long postId = ParsePostId(postUrl);
+            (long ownerId, long postId) = ParsePostUrl(postUrl);
             if (postId == 0)
+            {
                 await _botClient.BotApi.Messages.SendAsync(new MessagesSendParams
                 {
                     UserId = message.FromId,
                     RandomId = _random.NextInt64(),
-                    Message = $"Не удалось получить пост, возможно Ваша ссылка не корректна."
+                    Message = $"Не удалось получить пост, возможно [id{message.FromId}|Ваша] ссылка не корректна."
                 });
-
-            await MakeSign(message.FromId, postId);
+                return;
+            }
+            await MakeSign(message.FromId, postId, ownerId);
         }
 
         public async Task MakeSign(Message message, Wall? wall)
         {
-            if (message.FromId != wall!.OwnerId)
+            await MakeSign(message.FromId, wall!.Id, wall.OwnerId);
+        }
+
+        private async Task MakeSign(long? userId, long? postId, long? ownerId)
+        {
+            try
             {
+                if (ownerId != userId)
+                {
+                    await _botClient.BotApi.Messages.SendAsync(new MessagesSendParams
+                    {
+                        UserId = userId,
+                        RandomId = _random.NextInt64(),
+                        Message =
+                        "Вижу, что эта запись не на вашей странице. " +
+                        $"Я оставлю только роспись под [id{userId}|Вашим] постом на Вашей странице."
+                    });
+                    return;
+                }
+
+                await _botClient.BotApi.Wall.CreateCommentAsync(new WallCreateCommentParams
+                {
+                    PostId = (long)postId!,
+                    OwnerId = userId,
+                    Message = "Ты прекрасный репер"
+                });
+
                 await _botClient.BotApi.Messages.SendAsync(new MessagesSendParams
                 {
-                    UserId = message.FromId,
+                    UserId = userId,
                     RandomId = _random.NextInt64(),
-                    Message =
-                    "Вижу, что эта запись не на вашей странице. " +
-                    $"Я оставлю только роспись под [id{message.FromId}|Вашим] постом на вашей странице."
+                    Message = $"Оставил тебе роспись, [id{userId}|милашка]"
                 });
-                return;
             }
-
-            await MakeSign(message.FromId, (long)wall.Id!);
-        }
-
-        private async Task MakeSign(long? userId, long postId)
-        {
-            await _botClient.BotApi.Wall.CreateCommentAsync(new WallCreateCommentParams
+            catch (Exception ex)
             {
-                PostId = postId,
-                OwnerId = userId,
-                Message = "Ты прекрасный репер"
-            });
+                System.Console.WriteLine(ex.Message);
+            }
         }
 
-        private long ParsePostId(string url)
+        private (long, long) ParsePostUrl(string url)
         {
-            // https://vk.com/wall685754570_20
+            string pattern = @"vk.com\/wall\d+_\d+";
+            var matched = Regex.Match(url, pattern, RegexOptions.IgnoreCase);
+            if (!matched.Success)
+                return (0, 0);
 
-            if (!Regex.IsMatch(url, @"/vk.com\/wall\d+_\d+/gm"))
-                return 0;
-
-            Int64.TryParse(url.Split('_')[1], out long postId);
-            return postId;
+            pattern = @"\d+_\d+$";
+            var ids = Regex.Match(url, pattern, RegexOptions.IgnoreCase).ToString();
+            Int64.TryParse(ids.Split('_')[0], out long userId);
+            Int64.TryParse(ids.Split('_')[1], out long postId);
+            return (userId, postId);
         }
     }
 }
