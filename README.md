@@ -1,4 +1,4 @@
-## Dependecies
+## Dependencies
 ```powershell
 # For both projects
 dotnet add package Microsoft.Extensions.Hosting --version 7.0.1
