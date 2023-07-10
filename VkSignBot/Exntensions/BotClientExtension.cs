@@ -11,7 +11,7 @@ namespace VkSignBot.Exntensions
             if (optionAction == null) throw new ArgumentNullException(nameof(optionAction));
 
             collection.Configure(optionAction);
-            return collection.AddTransient<IBotClient, BotClient>();
+            return collection.AddSingleton<IBotClient, BotClient>();
         }
         public static IServiceCollection AddBotClient(
             this IServiceCollection collection,
@@ -21,7 +21,7 @@ namespace VkSignBot.Exntensions
             if (config == null) throw new ArgumentNullException(nameof(config));
 
             collection.Configure<BotClientOptions>(config);
-            return collection.AddTransient<IBotClient, BotClient>();
+            return collection.AddSingleton<IBotClient, BotClient>();
         }
     }
 }

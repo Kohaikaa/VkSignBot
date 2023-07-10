@@ -10,7 +10,7 @@ namespace VkSignBotApp
             {
                 var cfg = context.Configuration;
                 services.AddBotClient(cfg.GetSection("Vk"));
-                services.AddTransient<IBotClient, BotClient>();
+                services.AddSingleton<IBotClient, BotClient>();
             }).Build();
         }
 
