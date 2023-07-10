@@ -38,7 +38,7 @@ namespace VkSignBot
             });
 
             if ((_botApi.IsAuthorized && (_botApi.IsAuthorized || _userApi.IsAuthorized)) == false)
-                throw new VkAuthorizationException("НBot is not authorized");
+                throw new VkAuthorizationException("Bot is not authorized");
             Console.WriteLine("Bot is authorized");
         }
         public async Task StartPolling()
@@ -59,12 +59,15 @@ namespace VkSignBot
 
                     if (updates.Updates is null || updates.Updates.Count == 0) continue;
 
-                    var handleUpdatesTask = new Task(async () =>
+                    foreach (var update in updates.Updates)
                     {
-                        foreach (var update in updates.Updates)
+                        var handleUpdatesTask = new Task(async () =>
+                        {
                             await HandleUpdateAsync(update);
-                    });
-                    handleUpdatesTask.Start();
+                        });
+                        handleUpdatesTask.Start();
+                    }
+
                 }
             }
             catch (Exception ex)
@@ -89,6 +92,15 @@ namespace VkSignBot
             const char commandSymbol = '/';
             Message message = (update.Instance as MessageNew)!.Message;
             var text = message.Text.Trim().ToLower();
+
+            Console.WriteLine($"{Task.CurrentId} is sending message back to {message.Text} in the method {nameof(HandleMessageAsync)}");
+            await Task.Delay(5000);
+            await _botApi.Messages.SendAsync(new MessagesSendParams
+            {
+                UserId = message.FromId,
+                RandomId = _random.NextInt64(),
+                Message = message.Text
+            });
 
             if (!text.StartsWith(commandSymbol))
                 return;
@@ -121,6 +133,7 @@ namespace VkSignBot
                     await cmdService.MakeSign(message, parameters[0]);
                     break;
             }
+            Console.WriteLine($"{Task.CurrentId} is running in the method {nameof(HandleMessageAsync)}");
         }
     }
 
