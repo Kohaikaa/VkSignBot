@@ -59,11 +59,12 @@ namespace VkSignBot
 
                     if (updates.Updates is null || updates.Updates.Count == 0) continue;
 
-                    Task.Run(async () =>
+                    var handleUpdatesTask = new Task(async () =>
                     {
                         foreach (var update in updates.Updates)
                             await HandleUpdateAsync(update);
                     });
+                    handleUpdatesTask.Start();
                 }
             }
             catch (Exception ex)
