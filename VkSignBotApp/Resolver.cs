@@ -1,14 +1,20 @@
+using Microsoft.Extensions.Configuration;
+
 namespace VkSignBotApp
 {
     public static class Resolver
     {
         private static IHost? _host;
+        
         public static void BuildServices()
         {
             _host = Host.CreateDefaultBuilder()
             .ConfigureServices((context, services) =>
             {
-                var cfg = context.Configuration;
+                IConfigurationBuilder configBuilder = new ConfigurationBuilder()
+                    .SetBasePath(Directory.GetCurrentDirectory())
+                    .AddJsonFile("appsettings.json");
+                IConfiguration cfg = configBuilder.Build();
                 services.AddBotClient(cfg.GetSection("Vk"));
                 services.AddSingleton<IBotClient, BotClient>();
             }).Build();

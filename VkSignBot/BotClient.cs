@@ -2,13 +2,13 @@ namespace VkSignBot
 {
     public class BotClient : IBotClient
     {
-        private static Random _random = new Random();
+        private static readonly Random Random = new Random();
         private readonly string? _botToken;
         private readonly string? _appToken;
         private readonly uint _appId;
         private readonly ulong _groupId;
-        private IVkApi _userApi;
-        private IVkApi _botApi;
+        private readonly IVkApi _userApi;
+        private readonly IVkApi _botApi;
 
         public IVkApi UserApi { get => _userApi; init => _userApi = value; }
         public IVkApi BotApi { get => _botApi; init => _botApi = value; }
@@ -20,19 +20,19 @@ namespace VkSignBot
             _appId = options.Value.AppId;
             _groupId = options.Value.GroupId;
 
-            UserApi = new VkApi();
-            BotApi = new VkApi();
-            Authorize();
+            _userApi = new VkApi();
+            _botApi = new VkApi();
         }
-        private void Authorize()
+
+        public async Task AuthorizeAsync()
         {
-            _userApi.Authorize(new ApiAuthParams
+            await _userApi.AuthorizeAsync(new ApiAuthParams
             {
                 AccessToken = _appToken,
                 ApplicationId = _appId
             });
 
-            _botApi.Authorize(new ApiAuthParams
+            await _botApi.AuthorizeAsync(new ApiAuthParams
             {
                 AccessToken = _botToken,
             });
@@ -41,6 +41,7 @@ namespace VkSignBot
                 throw new VkAuthorizationException("Bot is not authorized");
             Console.WriteLine("Bot is authorized");
         }
+
         public async Task StartPolling()
         {
             Console.WriteLine("Polling...");
@@ -58,16 +59,16 @@ namespace VkSignBot
                     });
 
                     if (updates.Updates is null || updates.Updates.Count == 0) continue;
+                    if (updates.Updates.Count == 0) continue;
 
-                    foreach (var update in updates.Updates)
+                    var handleUpdatesTask = new Task(async () =>
                     {
-                        var handleUpdatesTask = new Task(async () =>
+                        foreach (var update in updates.Updates)
                         {
                             await HandleUpdateAsync(update);
-                        });
-                        handleUpdatesTask.Start();
-                    }
-
+                        }
+                    });
+                    handleUpdatesTask.Start();
                 }
             }
             catch (Exception ex)
@@ -93,15 +94,6 @@ namespace VkSignBot
             Message message = (update.Instance as MessageNew)!.Message;
             var text = message.Text.Trim().ToLower();
 
-            Console.WriteLine($"{Task.CurrentId} is sending message back to {message.Text} in the method {nameof(HandleMessageAsync)}");
-            await Task.Delay(5000);
-            await _botApi.Messages.SendAsync(new MessagesSendParams
-            {
-                UserId = message.FromId,
-                RandomId = _random.NextInt64(),
-                Message = message.Text
-            });
-
             if (!text.StartsWith(commandSymbol))
                 return;
 
@@ -110,6 +102,7 @@ namespace VkSignBot
                 text.Split(' ').Length > 1 && text.IndexOf(command) == 1 ?
                 text.Split(' ').AsSpan<string>().Slice(1).ToArray() :
                 null;
+            
             var cmdService = new CommandService(this);
             switch (command)
             {
@@ -125,12 +118,20 @@ namespace VkSignBot
                         await _botApi.Messages.SendAsync(new MessagesSendParams
                         {
                             UserId = message.FromId,
-                            RandomId = _random.NextInt64(),
-                            Message = $"Ни ссылки на пост, ни репост поста в лс нету, то и расписаться нигде не могу."
+                            RandomId = Random.NextInt64(),
+                            Message = $"Ни ссылки на пост, ни репост поста я не вижу, а значит расписаться нигде не могу."
                         });
                         break;
                     }
                     await cmdService.MakeSign(message, parameters[0]);
+                    break;
+                default:
+                    await _botApi.Messages.SendAsync(new MessagesSendParams
+                    {
+                        UserId = message.FromId,
+                        RandomId = Random.NextInt64(),
+                        Message = "Я не знаю такой команды, чел."
+                    });
                     break;
             }
             Console.WriteLine($"{Task.CurrentId} is running in the method {nameof(HandleMessageAsync)}");

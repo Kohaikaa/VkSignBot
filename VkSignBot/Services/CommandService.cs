@@ -4,7 +4,7 @@ namespace VkSignBot.Services
 {
     public class CommandService
     {
-        private static Random _random = new Random();
+        private static readonly Random Random = new Random();
         private readonly IBotClient _botClient;
 
         public CommandService(IBotClient botClient)
@@ -20,7 +20,7 @@ namespace VkSignBot.Services
                 await _botClient.BotApi.Messages.SendAsync(new MessagesSendParams
                 {
                     UserId = message.FromId,
-                    RandomId = _random.NextInt64(),
+                    RandomId = Random.NextInt64(),
                     Message = $"Не удалось получить пост, возможно [id{message.FromId}|Ваша] ссылка не корректна."
                 });
                 return;
@@ -42,7 +42,7 @@ namespace VkSignBot.Services
                     await _botClient.BotApi.Messages.SendAsync(new MessagesSendParams
                     {
                         UserId = userId,
-                        RandomId = _random.NextInt64(),
+                        RandomId = Random.NextInt64(),
                         Message =
                         "Вижу, что эта запись не на вашей странице. " +
                         $"Я оставлю только роспись под [id{userId}|Вашим] постом на Вашей странице."
@@ -60,7 +60,7 @@ namespace VkSignBot.Services
                 await _botClient.BotApi.Messages.SendAsync(new MessagesSendParams
                 {
                     UserId = userId,
-                    RandomId = _random.NextInt64(),
+                    RandomId = Random.NextInt64(),
                     Message = $"Оставил тебе роспись, [id{userId}|милашка]"
                 });
             }

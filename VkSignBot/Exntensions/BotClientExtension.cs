@@ -1,4 +1,3 @@
-
 namespace VkSignBot.Exntensions
 {
     public static class BotClientExtension
