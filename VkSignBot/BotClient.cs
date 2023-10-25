@@ -134,7 +134,6 @@ namespace VkSignBot
                     });
                     break;
             }
-            Console.WriteLine($"{Task.CurrentId} is running in the method {nameof(HandleMessageAsync)}");
         }
     }
 
