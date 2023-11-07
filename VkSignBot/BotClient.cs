@@ -1,38 +1,44 @@
+using Microsoft.Extensions.DependencyInjection.Extensions;
+
 namespace VkSignBot
 {
     public class BotClient : IBotClient
     {
         private static readonly Random Random = new Random();
-        private readonly string? _botToken;
-        private readonly string? _appToken;
         private readonly uint _appId;
         private readonly ulong _groupId;
-        private readonly IVkApi _userApi;
+        private readonly string? _botToken;
+        private readonly string? _appToken;
         private readonly IVkApi _botApi;
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IVkApi _userApi;
+
+        private IServiceProvider _serviceProvider;
+        private readonly IServiceCollection _serviceCollection;
 
         public IVkApi UserApi { get => _userApi; init => _userApi = value; }
         public IVkApi BotApi { get => _botApi; init => _botApi = value; }
 
         public BotClient(IOptions<BotClientOptions> options, IServiceCollection serviceCollection = null!)
         {
-            _botToken = options.Value.BotToken;
-            _appToken = options.Value.AppToken;
             _appId = options.Value.AppId;
             _groupId = options.Value.GroupId;
+            _botToken = options.Value.BotToken;
+            _appToken = options.Value.AppToken;
 
-            _userApi = new VkApi();
             _botApi = new VkApi();
+            _userApi = new VkApi();
 
             // Registration services
-            var services = serviceCollection ?? new ServiceCollection();
-            services.AddTransient<CommandService>();
-
-            _serviceProvider = services.BuildServiceProvider();
+            _serviceCollection = serviceCollection ?? new ServiceCollection();
+            _serviceCollection.AddTransient<CommandService>();
+            _serviceProvider = _serviceCollection.BuildServiceProvider();
         }
 
         public async Task AuthorizeAsync()
         {
+            if (_userApi.IsAuthorized && _botApi.IsAuthorized)
+                return;
+
             await _userApi.AuthorizeAsync(new ApiAuthParams
             {
                 AccessToken = _appToken,
@@ -46,6 +52,8 @@ namespace VkSignBot
 
             if ((_botApi.IsAuthorized && (_botApi.IsAuthorized || _userApi.IsAuthorized)) == false)
                 throw new VkAuthorizationException("Bot is not authorized");
+            _serviceCollection.Replace(new ServiceDescriptor(typeof(IBotClient), this));
+            _serviceProvider = _serviceCollection.BuildServiceProvider();
             Console.WriteLine("Bot is authorized");
         }
 

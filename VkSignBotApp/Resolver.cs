@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace VkSignBotApp
 {
@@ -14,10 +15,11 @@ namespace VkSignBotApp
                 IConfigurationBuilder configBuilder = new ConfigurationBuilder()
                     .SetBasePath(Directory.GetCurrentDirectory())
                     .AddJsonFile("appsettings.json");
+
                 IConfiguration cfg = configBuilder.Build();
                 services.AddBotClient(cfg.GetSection("Vk"));
                 services.AddSingleton<IBotClient, BotClient>();
-                services.AddSingleton(services);
+                services.AddSingleton(typeof(IServiceCollection), services);
             }).Build();
         }
 
