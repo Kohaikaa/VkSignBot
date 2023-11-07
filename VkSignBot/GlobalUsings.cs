@@ -2,8 +2,11 @@ global using Microsoft.Extensions.Options;
 global using Microsoft.Extensions.Configuration;
 global using Microsoft.Extensions.DependencyInjection;
 
+global using VkSignBot.Models;
 global using VkSignBot.Services;
 global using VkSignBot.Abstractions;
+global using VkSignBot.Repositories;
+global using VkSignBot.Repositories.Abstractions;
 
 global using VkNet;
 global using VkNet.Model;
