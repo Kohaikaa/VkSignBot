@@ -70,6 +70,13 @@ namespace VkSignBot.Services
             }
         }
 
+        /// <summary>
+        /// Scrabs user id and post id from post's url.
+        /// </summary>
+        /// <param name="url">post's url</param>
+        /// <returns>
+        /// The first long is userId, the second long is postId.
+        /// </returns>
         private (long, long) ParsePostUrl(string url)
         {
             string pattern = @"vk.com\/wall\d+_\d+";

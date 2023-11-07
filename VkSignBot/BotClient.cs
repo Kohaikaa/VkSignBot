@@ -5,12 +5,10 @@ namespace VkSignBot
     public class BotClient : IBotClient
     {
         private static readonly Random Random = new Random();
-        private readonly uint _appId;
-        private readonly ulong _groupId;
-        private readonly string? _botToken;
-        private readonly string? _appToken;
+
         private readonly IVkApi _botApi;
         private readonly IVkApi _userApi;
+        private readonly BotClientOptions _botClientOptions;
 
         private IServiceProvider _serviceProvider;
         private readonly IServiceCollection _serviceCollection;
@@ -20,11 +18,7 @@ namespace VkSignBot
 
         public BotClient(IOptions<BotClientOptions> options, IServiceCollection serviceCollection = null!)
         {
-            _appId = options.Value.AppId;
-            _groupId = options.Value.GroupId;
-            _botToken = options.Value.BotToken;
-            _appToken = options.Value.AppToken;
-
+            _botClientOptions = options.Value;
             _botApi = new VkApi();
             _userApi = new VkApi();
 
@@ -41,13 +35,13 @@ namespace VkSignBot
 
             await _userApi.AuthorizeAsync(new ApiAuthParams
             {
-                AccessToken = _appToken,
-                ApplicationId = _appId
+                AccessToken = _botClientOptions.AppToken,
+                ApplicationId = _botClientOptions.AppId
             });
 
             await _botApi.AuthorizeAsync(new ApiAuthParams
             {
-                AccessToken = _botToken,
+                AccessToken = _botClientOptions.BotToken,
             });
 
             if ((_botApi.IsAuthorized && (_botApi.IsAuthorized || _userApi.IsAuthorized)) == false)
@@ -64,7 +58,7 @@ namespace VkSignBot
             {
                 while (true)
                 {
-                    var longPollResponse = await _botApi!.Groups.GetLongPollServerAsync(_groupId);
+                    var longPollResponse = await _botApi!.Groups.GetLongPollServerAsync(_botClientOptions.GroupId);
                     var updates = await _botApi!.Groups.GetBotsLongPollHistoryAsync(new BotsLongPollHistoryParams
                     {
                         Ts = longPollResponse.Ts,
