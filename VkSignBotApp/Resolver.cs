@@ -17,6 +17,7 @@ namespace VkSignBotApp
                 IConfiguration cfg = configBuilder.Build();
                 services.AddBotClient(cfg.GetSection("Vk"));
                 services.AddSingleton<IBotClient, BotClient>();
+                services.AddSingleton(services);
             }).Build();
         }
 

@@ -9,11 +9,12 @@ namespace VkSignBot
         private readonly ulong _groupId;
         private readonly IVkApi _userApi;
         private readonly IVkApi _botApi;
+        private readonly IServiceProvider _serviceProvider;
 
         public IVkApi UserApi { get => _userApi; init => _userApi = value; }
         public IVkApi BotApi { get => _botApi; init => _botApi = value; }
 
-        public BotClient(IOptions<BotClientOptions> options)
+        public BotClient(IOptions<BotClientOptions> options, IServiceCollection serviceCollection = null!)
         {
             _botToken = options.Value.BotToken;
             _appToken = options.Value.AppToken;
@@ -22,6 +23,12 @@ namespace VkSignBot
 
             _userApi = new VkApi();
             _botApi = new VkApi();
+
+            // Registration services
+            var services = serviceCollection ?? new ServiceCollection();
+            services.AddTransient<CommandService>();
+
+            _serviceProvider = services.BuildServiceProvider();
         }
 
         public async Task AuthorizeAsync()
@@ -58,15 +65,13 @@ namespace VkSignBot
                         Wait = 25
                     });
 
-                    if (updates.Updates is null || updates.Updates.Count == 0) continue;
+                    if (updates.Updates is null) continue;
                     if (updates.Updates.Count == 0) continue;
 
                     var handleUpdatesTask = new Task(async () =>
                     {
                         foreach (var update in updates.Updates)
-                        {
                             await HandleUpdateAsync(update);
-                        }
                     });
                     handleUpdatesTask.Start();
                 }
@@ -100,10 +105,10 @@ namespace VkSignBot
             var command = text.Split(new char[] { commandSymbol, ' ' })[1];
             var parameters =
                 text.Split(' ').Length > 1 && text.IndexOf(command) == 1 ?
-                text.Split(' ').AsSpan<string>().Slice(1).ToArray() :
+                text.Split(' ').AsSpan().Slice(1).ToArray() :
                 null;
             
-            var cmdService = new CommandService(this);
+            var cmdService = _serviceProvider.GetRequiredService<CommandService>();
             switch (command)
             {
                 case "роспись":
