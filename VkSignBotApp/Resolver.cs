@@ -5,7 +5,7 @@ namespace VkSignBotApp
     public static class Resolver
     {
         private static IHost? _host;
-        
+
         public static void BuildServices()
         {
             _host = Host.CreateDefaultBuilder()
@@ -17,7 +17,6 @@ namespace VkSignBotApp
 
                 IConfiguration cfg = configBuilder.Build();
                 services.AddBotClient(cfg.GetSection("Vk"));
-                services.AddSingleton<IBotClient, BotClient>();
                 services.AddSingleton(typeof(IServiceCollection), services);
             }).Build();
         }

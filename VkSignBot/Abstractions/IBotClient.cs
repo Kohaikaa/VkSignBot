@@ -5,7 +5,7 @@ namespace VkSignBot.Abstractions
         IVkApi UserApi { get; init; }
         IVkApi BotApi { get; init; }
         Task AuthorizeAsync();
-        Task StartPolling();
+        Task StartPollingAsync();
         Task HandleUpdateAsync(GroupUpdate update);
         Task HandleMessageAsync(GroupUpdate update);
     }

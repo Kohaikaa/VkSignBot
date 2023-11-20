@@ -6,6 +6,6 @@ public class Program
         Resolver.BuildServices();
         var bot = Resolver.Resolve<IBotClient>();
         await bot.AuthorizeAsync();
-        await bot.StartPolling();
+        await bot.StartPollingAsync();
     }
 }

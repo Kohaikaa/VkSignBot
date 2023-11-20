@@ -1,17 +1,13 @@
-using Microsoft.Extensions.DependencyInjection.Extensions;
-
 namespace VkSignBot
 {
     public class BotClient : IBotClient
     {
         private static readonly Random Random = new Random();
 
-        private readonly IVkApi _botApi;
-        private readonly IVkApi _userApi;
+        private readonly IVkApi _botApi, _userApi;
         private readonly BotClientOptions _botClientOptions;
 
         private IServiceProvider _serviceProvider;
-        private readonly IServiceCollection _serviceCollection;
 
         public IVkApi UserApi { get => _userApi; init => _userApi = value; }
         public IVkApi BotApi { get => _botApi; init => _botApi = value; }
@@ -23,16 +19,15 @@ namespace VkSignBot
             _userApi = new VkApi();
 
             // Registration services
-            _serviceCollection = serviceCollection ?? new ServiceCollection();
-            _serviceCollection.AddTransient<CommandService>();
-            _serviceProvider = _serviceCollection.BuildServiceProvider();
+            var services = serviceCollection ?? new ServiceCollection();
+            services.AddTransient<CommandService>();
+            services.AddKeyedSingleton<IVkApi>("bot", _botApi);
+            services.AddKeyedSingleton<IVkApi>("user", _userApi);
+            _serviceProvider = services.BuildServiceProvider();
         }
 
         public async Task AuthorizeAsync()
         {
-            if (_userApi.IsAuthorized && _botApi.IsAuthorized)
-                return;
-
             await _userApi.AuthorizeAsync(new ApiAuthParams
             {
                 AccessToken = _botClientOptions.AppToken,
@@ -46,12 +41,11 @@ namespace VkSignBot
 
             if ((_botApi.IsAuthorized && (_botApi.IsAuthorized || _userApi.IsAuthorized)) == false)
                 throw new VkAuthorizationException("Bot is not authorized");
-            _serviceCollection.Replace(new ServiceDescriptor(typeof(IBotClient), this));
-            _serviceProvider = _serviceCollection.BuildServiceProvider();
+
             Console.WriteLine("Bot is authorized");
         }
 
-        public async Task StartPolling()
+        public async Task StartPollingAsync()
         {
             Console.WriteLine("Polling...");
             try
@@ -67,21 +61,13 @@ namespace VkSignBot
                         Wait = 25
                     });
 
-                    if (updates.Updates is null) continue;
-                    if (updates.Updates.Count == 0) continue;
-
-                    var handleUpdatesTask = new Task(async () =>
-                    {
-                        foreach (var update in updates.Updates)
-                            await HandleUpdateAsync(update);
-                    });
-                    handleUpdatesTask.Start();
+                    if (updates.Updates?.Any() is false) continue;
+                    Task.WhenAll(updates.Updates!.Select(update => HandleUpdateAsync(update)));
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                throw;
             }
         }
 
@@ -109,14 +95,14 @@ namespace VkSignBot
                 text.Split(' ').Length > 1 && text.IndexOf(command) == 1 ?
                 text.Split(' ').AsSpan().Slice(1).ToArray() :
                 null;
-            
+
             var cmdService = _serviceProvider.GetRequiredService<CommandService>();
             switch (command)
             {
                 case "роспись":
                     if (message.Attachments.Count > 0)
                     {
-                        var post = (message.Attachments.First(attach => attach.Type == typeof(Wall)).Instance as Wall);
+                        var post = message.Attachments.First(attach => attach.Type == typeof(Wall)).Instance as Wall;
                         await cmdService.MakeSign(message, post);
                         break;
                     }
