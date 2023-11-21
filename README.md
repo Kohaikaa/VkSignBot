@@ -12,9 +12,9 @@
 ```powershell
 # For both projects
 dotnet add package Microsoft.Extensions.Hosting --version 7.0.1
-dotnet add package Microsoft.Extensions.DependencyInjection --version 7.0.0
+dotnet add package Microsoft.Extensions.DependencyInjection --version 8.0.0
 # Only for VkSignBot
-dotnet add package VkNet --version 1.74.0
+dotnet add package VkNet --version 1.76.0
 ```
 
 ## Configuration
