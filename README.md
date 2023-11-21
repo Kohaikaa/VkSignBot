@@ -25,7 +25,8 @@ Inside the appsettings.json fill up these options.
         "BotToken": "",
         "AppToken": "",
         "AppId": 0,
-        "GroupId": 0
+        "GroupId": 0,
+        "Admins": []
     }
 }
 ```

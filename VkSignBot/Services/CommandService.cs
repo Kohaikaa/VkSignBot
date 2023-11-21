@@ -5,11 +5,11 @@ namespace VkSignBot.Services
     public class CommandService
     {
         private static readonly Random Random = new Random();
-        private readonly IBotClient _botClient;
+        private readonly IVkApi _botApi;
 
-        public CommandService(IBotClient botClient)
+        public CommandService([FromKeyedServices("bot")] IVkApi botApi)
         {
-            _botClient = botClient;
+            _botApi = botApi;
         }
 
         public async Task MakeSign(Message message, string postUrl)
@@ -17,7 +17,7 @@ namespace VkSignBot.Services
             (long ownerId, long postId) = ParsePostUrl(postUrl);
             if (postId == 0)
             {
-                await _botClient.BotApi.Messages.SendAsync(new MessagesSendParams
+                await _botApi.Messages.SendAsync(new MessagesSendParams
                 {
                     UserId = message.FromId,
                     RandomId = Random.NextInt64(),
@@ -39,7 +39,7 @@ namespace VkSignBot.Services
             {
                 if (ownerId != userId)
                 {
-                    await _botClient.BotApi.Messages.SendAsync(new MessagesSendParams
+                    await _botApi.Messages.SendAsync(new MessagesSendParams
                     {
                         UserId = userId,
                         RandomId = Random.NextInt64(),
@@ -50,14 +50,14 @@ namespace VkSignBot.Services
                     return;
                 }
 
-                await _botClient.BotApi.Wall.CreateCommentAsync(new WallCreateCommentParams
+                await _botApi.Wall.CreateCommentAsync(new WallCreateCommentParams
                 {
                     PostId = (long)postId!,
                     OwnerId = userId,
                     Message = "Ты прекрасный репер"
                 });
 
-                await _botClient.BotApi.Messages.SendAsync(new MessagesSendParams
+                await _botApi.Messages.SendAsync(new MessagesSendParams
                 {
                     UserId = userId,
                     RandomId = Random.NextInt64(),
@@ -66,7 +66,7 @@ namespace VkSignBot.Services
             }
             catch (Exception ex)
             {
-                System.Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.Message);
             }
         }
 

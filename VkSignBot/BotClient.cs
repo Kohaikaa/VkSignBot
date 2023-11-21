@@ -19,6 +19,11 @@ namespace VkSignBot
             _userApi = new VkApi();
 
             // Registration services
+            RegisterServices(serviceCollection);
+        }
+
+        private void RegisterServices(IServiceCollection serviceCollection)
+        {
             var services = serviceCollection ?? new ServiceCollection();
             services.AddTransient<CommandService>();
             services.AddKeyedSingleton<IVkApi>("bot", _botApi);
@@ -38,11 +43,23 @@ namespace VkSignBot
             {
                 AccessToken = _botClientOptions.BotToken,
             });
-
-            if ((_botApi.IsAuthorized && (_botApi.IsAuthorized || _userApi.IsAuthorized)) == false)
+            try
+            {
+                foreach (var admin in _botClientOptions.Admins ?? Array.Empty<long>())
+                {
+                    await _botApi.Messages.SendAsync(new MessagesSendParams
+                    {
+                        UserId = admin,
+                        RandomId = Random.NextInt64(),
+                        Message = $"Бот авторизован и готов к работе!."
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
                 throw new VkAuthorizationException("Bot is not authorized");
-
-            Console.WriteLine("Bot is authorized");
+            }
         }
 
         public async Task StartPollingAsync()
@@ -136,5 +153,6 @@ namespace VkSignBot
         public string? AppToken { get; set; }
         public uint AppId { get; set; }
         public ulong GroupId { get; set; }
+        public long[]? Admins { get; set; }
     }
 }
