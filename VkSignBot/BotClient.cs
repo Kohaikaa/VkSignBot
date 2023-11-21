@@ -61,8 +61,8 @@ namespace VkSignBot
                         Wait = 25
                     });
 
-                    if (updates.Updates?.Any() is false) continue;
-                    Task.WhenAll(updates.Updates!.Select(update => HandleUpdateAsync(update)));
+                    if (updates.Updates.Any() is false) continue;
+                    updates.Updates.AsParallel().ForAll(async upd => await HandleUpdateAsync(upd));
                 }
             }
             catch (Exception ex)
