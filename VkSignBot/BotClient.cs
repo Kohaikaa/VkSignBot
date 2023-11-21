@@ -6,8 +6,7 @@ namespace VkSignBot
 
         private readonly IVkApi _botApi, _userApi;
         private readonly BotClientOptions _botClientOptions;
-
-        private IServiceProvider _serviceProvider;
+        private readonly IServiceProvider _serviceProvider;
 
         public IVkApi UserApi { get => _userApi; init => _userApi = value; }
         public IVkApi BotApi { get => _botApi; init => _botApi = value; }
@@ -19,16 +18,16 @@ namespace VkSignBot
             _userApi = new VkApi();
 
             // Registration services
-            RegisterServices(serviceCollection);
+            _serviceProvider = RegisterServices(serviceCollection);
         }
 
-        private void RegisterServices(IServiceCollection serviceCollection)
+        private ServiceProvider RegisterServices(IServiceCollection serviceCollection)
         {
             var services = serviceCollection ?? new ServiceCollection();
             services.AddTransient<CommandService>();
             services.AddKeyedSingleton<IVkApi>("bot", _botApi);
             services.AddKeyedSingleton<IVkApi>("user", _userApi);
-            _serviceProvider = services.BuildServiceProvider();
+            return services.BuildServiceProvider();
         }
 
         public async Task AuthorizeAsync()
